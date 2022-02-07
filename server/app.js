@@ -2,15 +2,14 @@ import express from 'express';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
-
 import indexRouter from './routes/index';
 import usersRouter from './routes/users';
 import productsRouter from './routes/products';
-import mongoose from 'mongoose'
-var app = express();
-var mongoDB = 'mongodb://127.0.0.1/my_database';
-mongoose.connect(mongoDB, {useNewUrlParser: true, useUnifiedTopology: true});
-var db = mongoose.connection;
+import mongoose from 'mongoose';
+const app = express();
+const mongoDB = 'mongodb://127.0.0.1/my_database';
+mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true }).then(res => console.log('mongoDb connected')).catch(err => console.error(err));
+const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 app.use(logger('dev'));
 app.use(express.json());
