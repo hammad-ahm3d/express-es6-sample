@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import Product from './products';
 
 const connectDb = () => {
-  return mongoose.connect(process.env.DATABASE_URL, { useNewUrlParser: true, useUnifiedTopology: true });
+  return mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/webscraper', { useNewUrlParser: true, useUnifiedTopology: true });
 };
 
 const models = { Product };

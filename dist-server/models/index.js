@@ -14,7 +14,7 @@ var _mongoose = _interopRequireDefault(require("mongoose"));
 var _products = _interopRequireDefault(require("./products"));
 
 var connectDb = function connectDb() {
-  return _mongoose["default"].connect(process.env.DATABASE_URL, {
+  return _mongoose["default"].connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/webscraper', {
     useNewUrlParser: true,
     useUnifiedTopology: true
   });
