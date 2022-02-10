@@ -1,125 +1,89 @@
 import puppeteer from 'puppeteer';
 const amazonUrl = 'https://www.amazon.com';
 const flipkartUrl = 'https://www.flipkart.com';
-const alibabaUrl = 'https://www.alibaba.com/trade/search?SearchText=';
-
+const ebayUrl = 'https://www.ebay.com';
 const waitUntil = 'domcontentloaded';
+
 const getFlipkartVendors = async (browser, productName) => {
   const page = await browser.newPage();
   await page.goto(`${flipkartUrl}/search?q=${productName}`, { waitUntil });
-  await page.waitForSelector('body');
   const productList = await page.evaluate(() => {
     const results = [];
-    const items = document.querySelectorAll('a._1fQZEK');
-    items.forEach((item, index) => {
+    const images = document.querySelectorAll('._13oc-S img._396cs4._3exPp9');
+    const ratings = document.querySelectorAll('._13oc-S div._3LWZlK');
+    const prices = document.querySelectorAll('._13oc-S ._30jeq3._1_WHN1');
+
+    images.forEach((item, index) => {
       if (index < 3) {
         results.push({
-          url: item.getAttribute('href'),
-          text: item.innerText
+          name: item.getAttribute('alt'),
+          imageUrl: item.getAttribute('src'),
+          rating: ratings[index]?.innerHTML.trim().substring(0, 3),
+          price: prices[index]?.innerHTML ?? 'price not available'
         });
       }
     });
     return results;
   });
-  const productDetails = [];
-  // first product
-  const page1 = await browser.newPage();
-  await page1.goto(flipkartUrl + productList[0]?.url, { waitUntil });
-  await page1.waitForSelector('body');
-  const productDetails1 = await getProductDetailsFromFlipkart(page1);
-  // second product
-  const page2 = await browser.newPage();
-  await page2.goto(flipkartUrl + productList[1]?.url, { waitUntil });
-  await page2.waitForSelector('body');
-  const productDetails2 = await getProductDetailsFromFlipkart(page2);
-  // third product
-  const page3 = await browser.newPage();
-  await page3.goto(flipkartUrl + productList[2]?.url, { waitUntil });
-  await page3.waitForSelector('body');
-  const productDetails3 = await getProductDetailsFromFlipkart(page3);
-  return [...productDetails, productDetails1, productDetails2, productDetails3];
+  return productList;
 };
 const getAmazonVendors = async (browser, productName) => {
   const page = await browser.newPage();
   await page.goto(`${amazonUrl}/s?k=${productName}`, { waitUntil });
-  await page.waitForSelector('body');
   const productList = await page.evaluate(() => {
     const results = [];
     const images = document.querySelectorAll('img.s-image');
-    const items = document.querySelectorAll('a.a-link-normal.s-underline-text.s-underline-link-text.s-link-style.a-text-normal');
-    items.forEach((item, index) => { if (index < 3) results.push({ url: item.getAttribute('href'), imageUrl: images[index]?.getAttribute('src') }); });
+    const ratings = document.querySelectorAll('.a-section .a-row.a-size-small .a-icon-alt');
+    const prices = document.querySelectorAll('.a-section .a-price .a-offscreen');
 
+    images.forEach((item, index) => {
+      if (index < 3) {
+        results.push({
+          name: item.getAttribute('alt'),
+          imageUrl: item.getAttribute('src'),
+          rating: ratings[index]?.innerHTML.trim().substring(0, 3),
+          price: prices[index]?.innerHTML ?? 'price not available'
+        });
+      }
+    });
     return results;
   });
-  const productDetails = [];
-  // first product
-  const page1 = await browser.newPage();
-  await page1.goto(amazonUrl + productList[0]?.url, { waitUntil });
-  // await page1.waitForSelector('body');
-  const productDetails1 = await getProductDetailsFromAmazon(page1);
-  // second product
-  const page2 = await browser.newPage();
-  await page2.goto(amazonUrl + productList[1]?.url, { waitUntil });
-  // await page2.waitForSelector('body');
-  const productDetails2 = await getProductDetailsFromAmazon(page2);
-  // third product
-  const page3 = await browser.newPage();
-  await page3.goto(amazonUrl + productList[2]?.url, { waitUntil });
-  // await page3.waitForSelector('body');
-  const productDetails3 = await getProductDetailsFromAmazon(page3);
-  return [...productDetails, { ...productDetails1, imageUrl: productList[0]?.imageUrl }, { ...productDetails2, imageUrl: productList[1]?.imageUrl }, { ...productDetails3, imageUrl: productList[2]?.imageUrl }];
-};
-const getProductDetailsFromAmazon = async (page) => {
-  const productDetails = await page.evaluate(() => {
-    let results = {};
-    const productName = document.querySelector('#productTitle');
-    const productRating = document.querySelector('span.a-icon-alt');
-    const productPrice = document.querySelector('span.a-offscreen');
 
-    results = {
-      name: productName.innerHTML.trim(),
-      rating: productRating.innerHTML.substring(0, 3),
-      price: productPrice.innerHTML
-    };
-    return results;
-  });
-  return productDetails;
+  return productList;
 };
-const getAlibabaVendors = async (productName) => {
-  const browser = await puppeteer.launch({ headless: false });
+
+const getEbayVendors = async (browser, productName) => {
   const page = await browser.newPage();
-  await page.goto(alibabaUrl + productName, { waitUntil });
-  await page.waitForSelector('body');
-  return 'alibaba';
-};
+  await page.goto(`${ebayUrl}/sch/i.html?_from=R40&_trksid=p2380057.m570.l1313&_nkw=${productName}`, { waitUntil });
+  const productList = await page.evaluate(() => {
+    const results = [];
+    const images = document.querySelectorAll('.s-item.s-item__pl-on-bottom.s-item--watch-at-corner img.s-item__image-img');
+    const names = document.querySelectorAll('.s-item.s-item__pl-on-bottom.s-item--watch-at-corner h3.s-item__title');
+    const ratings = document.querySelectorAll('.s-item.s-item__pl-on-bottom.s-item--watch-at-corner .x-star-rating span.clipped');
+    const prices = document.querySelectorAll('.s-item.s-item__pl-on-bottom.s-item--watch-at-corner .s-item__details.clearfix span.s-item__price');
 
-const getProductDetailsFromFlipkart = async (page) => {
-  const productDetails = await page.evaluate(() => {
-    let results = {};
-    const productImage = document.querySelector('img._396cs4');
-    const productName = document.querySelector('span.B_NuCI');
-    const productRating = document.querySelector('div._3LWZlK');
-    const productPrice = document.querySelector('div._30jeq3._16Jk6d');
+    images.forEach((item, index) => {
+      if (index < 3) {
+        results.push({
+          name: names[index]?.innerHTML,
+          imageUrl: item.getAttribute('src'),
+          rating: ratings[index]?.innerHTML.trim().substring(0, 3),
+          price: prices[index]?.innerHTML
+        });
+      }
+    });
 
-    results = {
-      imageUrl: productImage.getAttribute('srcset'),
-      name: productName.innerHTML,
-      rating: productRating.innerHTML.substring(0, 3),
-      price: productPrice.innerHTML
-    };
     return results;
   });
-  return productDetails;
+  return productList;
 };
-
 const searchVendors = async (req, res, next) => {
   let browser;
   try {
     browser = await puppeteer.launch({ headless: false });
     const { productName } = req.query;
-    const flipKartProducts = await getFlipkartVendors(browser, productName);
-    const amazonProducts = await getAmazonVendors(browser, productName);
-    res.send({ amazonVendors: amazonProducts, flipkartVendors: flipKartProducts });
+    const [amazonVendors, ebayVendors, flipkartVendors] = await Promise.all([getAmazonVendors(browser, productName), getEbayVendors(browser, productName), getFlipkartVendors(browser, productName)]);
+    res.send({ amazonVendors, ebayVendors, flipkartVendors });
   } catch (error) {
     next(error);
   } finally {
