@@ -1,5 +1,6 @@
 import express from 'express';
 import Product from '../models/products';
+import { searchVendors } from '../utilities/scrape';
 const router = express.Router();
 
 const fetchProducts = (req, res, next) => {
@@ -7,7 +8,7 @@ const fetchProducts = (req, res, next) => {
     if (error) {
       return next(error);
     }
-    res.json(results);
+    res.json({ content: results, totalRecords: results.length });
   });
 };
 
@@ -29,4 +30,5 @@ router.get('/', function (req, res, next) {
 });
 router.get('/all', fetchProducts);
 router.post('/add', postRecord);
+router.get('/search', searchVendors);
 export { router as productsRouter };
